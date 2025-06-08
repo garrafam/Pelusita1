@@ -1,0 +1,21 @@
+# Node modules
+node_modules/
+npm-debug.log
+yarn-error.log
+
+
+
+# Build output
+dist/
+dist_electron/ # Para ignorar la carpeta donde electron-builder guarda los paquetes
+/out
+# Bases de datos locales (si no quieres versionarla, lo cual es común para SQLite en desarrollo)
+*.sqlite
+*.sqlite-journal
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de entorno (si los usas y no deben ir al repo)
+.env
