@@ -1,5 +1,6 @@
 // historial_script.js
-
+import { fetchAPI } from './utils.js'; // Asegúrate de que esta función esté definida en apiUtils.js
+// --- Rutas de productos
 const REMITO_API_URL = 'http://localhost:3001/api/remitos';
 const TASA_IVA = 0.21; 
 
@@ -19,7 +20,7 @@ let paginaActualHistorial = 1;
 const limitePorPaginaHistorial = 5; 
 
 // --- Funciones API ---
-async function fetchAPI(url, options = {}) {
+/*async function fetchAPI(url, options = {}) {
     const respuesta = await fetch(url, options);
     if (!respuesta.ok) {
         const errorData = await respuesta.json().catch(() => ({ message: respuesta.statusText }));
@@ -31,7 +32,7 @@ async function fetchAPI(url, options = {}) {
     }
     if (respuesta.status === 204) return {}; 
     return respuesta.json().catch(() => ({}));
-}
+}*/
 
 // --- Historial de Remitos ---
 async function cargarHistorialRemitos(pagina = 1, filtroClienteNombre = "", ordenarPor = "fecha", ordenDireccion = "DESC", fechaDesde = "", fechaHasta = "") { 

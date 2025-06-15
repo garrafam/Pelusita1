@@ -28,7 +28,7 @@ app.use(cors());
 // En src/app.js
 
 // ... tus otras importaciones
-const publicPath = path.join(__dirname, '..', 'public');
+const publicPath = path.join(__dirname,'../','public');
 
 // 2. Imprimimos la ruta en la consola de la terminal para verla
 console.log('================================================');
@@ -42,7 +42,7 @@ app.use(express.static(publicPath));
 app.use(express.json());
 
 
-/*
+
 // Si necesitas una configuración de CORS más específica en el futuro:
 const corsOptions = {
   // Reemplaza esto con la URL de tu frontend
@@ -50,7 +50,7 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
-*/
+
 
 // B) Middlewares para parsear el cuerpo de las peticiones
 app.use(express.json()); // Para entender cuerpos en formato JSON
