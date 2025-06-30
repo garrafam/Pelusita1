@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nueva Factura - PelusitaStock</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Puedes añadir otros estilos generales aquí si los necesitas */
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 p-4 sm:p-6 lg:p-8">
+
+    <div class="container mx-auto">
+        <header class="mb-6">
+            <a href="index.html" class="text-sky-600 hover:text-sky-800 transition-colors text-sm font-medium">&larr; Volver al Menú Principal</a>
+            <h1 class="text-3xl font-bold text-gray-800 mt-2">Creación de Nueva Factura</h1>
+        </header>
+
+        <!-- Contenedor principal de dos columnas -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+            <!-- Columna Izquierda: Lista de Productos -->
+            <aside class="bg-white p-6 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-semibold mb-4 text-sky-700">Seleccionar Productos</h2>
+                <input type="text" id="filtro-productos" placeholder="Buscar producto por nombre o código..." class="w-full p-2 border border-gray-300 rounded-lg mb-4 focus:ring-sky-500 focus:border-sky-500">
+                <div id="lista-productos-disponibles" class="max-h-[60vh] overflow-y-auto border rounded-lg">
+                    <!-- El JavaScript llenará esta área con los productos -->
+                    <p class="p-4 text-gray-500">Cargando productos...</p>
+                </div>
+            </aside>
+
+            <!-- Columna Derecha: Factura Actual -->
+            <main class="bg-white p-6 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-semibold mb-4 text-sky-700">Detalle de Factura</h2>
+
+                <!-- Formulario de Datos del Cliente -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 border rounded-lg bg-gray-50">
+                    <div>
+                        <label for="factura-cliente-nombre" class="block text-sm font-medium text-gray-700 mb-1">Nombre del Cliente (*)</label>
+                        <input type="text" id="factura-cliente-nombre" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label for="factura-cliente-cuit" class="block text-sm font-medium text-gray-700 mb-1">CUIT/CUIL</label>
+                        <input type="text" id="factura-cliente-cuit" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label for="factura-tipo-comprobante" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Comprobante</label>
+                        <select id="factura-tipo-comprobante" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500">
+                            <option value="Factura B">Factura B</option>
+                            <option value="Factura A">Factura A</option>
+                            <option value="Factura C">Factura C</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tabla con los items de la factura -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Producto</th>
+                                <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 w-24">Cantidad</th>
+                                <th class="px-4 py-2 text-right text-sm font-semibold text-gray-600">P. Unit.</th>
+                                <th class="px-4 py-2 text-right text-sm font-semibold text-gray-600">Subtotal</th>
+                                <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-factura-items">
+                            <!-- El JavaScript llenará esta área -->
+                            <tr class="h-20">
+                                <td colspan="5" class="text-center text-gray-400">Agregue productos desde la lista...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Sección de Totales -->
+                <div class="mt-6 pt-4 border-t-2 text-right space-y-2">
+                    <p class="text-md"><span class="font-medium text-gray-600">Subtotal (sin IVA):</span> <span id="factura-subtotal-sin-iva">$0.00</span></p>
+                    <p class="text-md"><span class="font-medium text-gray-600">IVA (21%):</span> <span id="factura-total-iva">$0.00</span></p>
+                    <p class="text-xl font-bold"><span class="text-gray-800">TOTAL:</span> <span id="factura-total-con-iva" class="text-sky-600">$0.00</span></p>
+                </div>
+
+                <!-- Botón de Acción Principal -->
+                <div class="mt-8">
+                    <button id="btn-generar-factura" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold text-lg py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300">
+                        Generar Factura y Actualizar Stock
+                    </button>
+                </div>
+            </main>
+
+        </div>
+    </div>
+    
+    <!-- Scripts al final -->
+    <script type="module" src="./js/utils.js" defer></script>
+    <script type="module" src="./js/facturacion.js" defer></script>
+</body>
+</html>

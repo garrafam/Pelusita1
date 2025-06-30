@@ -1,91 +1,158 @@
+// public/js/utils.js (Versión Corregida y Robusta)
 
-let genericModal
-let genericModalTitulo , genericModalMensaje, genericModalBotones
-genericModal = document.getElementById('generic-modal');
-genericModalTitulo = document.getElementById('generic-modal-titulo');
-genericModalMensaje = document.getElementById('generic-modal-mensaje');
-genericModalBotones = document.getElementById('generic-modal-botones');
+// --- Variables Globales para el Modal ---
+let genericModal;
+let genericModalTitulo;
+let genericModalMensaje;
+let genericModalBotones;
+let genericModalBtnCerrarX;
+
+/**
+ * Realiza una petición a la API y maneja las respuestas y errores de forma centralizada.
+ * @param {string} url La URL del endpoint de la API.
+ * @param {object} options Opciones para la petición fetch (method, headers, body, etc.).
+ * @returns {Promise<any>} Una promesa que se resuelve con los datos JSON de la respuesta.
+ */
 export async function fetchAPI(url, options = {}) {
-    const respuesta = await fetch(url, options);
-    if (!respuesta.ok) {
-        const errorData = await respuesta.json().catch(() => ({ message: respuesta.statusText }));
-        let errorMessage = errorData.message || `Error HTTP ${respuesta.status}`;
-        if (errorData.errors && Array.isArray(errorData.errors)) {
-            errorMessage += ": " + errorData.errors.map(e => `${e.field ? e.field + ': ' : ''}${e.message}`).join(', ');
+    try {
+        const respuesta = await fetch(url, options);
+        if (!respuesta.ok) {
+            const errorData = await respuesta.json().catch(() => ({ message: respuesta.statusText }));
+            throw new Error(errorData.message || `Error HTTP ${respuesta.status}`);
         }
-        throw new Error(errorMessage);
+        // Si la respuesta no tiene contenido (ej. un DELETE exitoso), devuelve un objeto vacío.
+        if (respuesta.status === 204) {
+            return {};
+        }
+        return respuesta.json();
+    } catch (error) {
+        console.error('Error en fetchAPI:', error);
+        throw error; // Relanza el error para que la función que llama pueda manejarlo.
     }
-    if (respuesta.status === 204) return {}; 
-    return respuesta.json().catch(() => ({}));
 }
-// --- NUEVAS FUNCIONES PARA MODAL GENÉRICO ---
-export function mostrarModalMensaje(titulo, mensaje, tipo = 'info', autoCerrar = true, elementoMensajeAlternativo = null) { /* ... (código sin cambios) ... */ }
 
-export function mostrarModalConfirmacion(titulo, mensaje, callbackConfirmar, callbackCancelar = null) { 
-    console.log("[DEBUG MODAL CONFIRM] Entrando a mostrarModalConfirmacion. Título:", titulo); 
-    if (!genericModal || !genericModalTitulo || !genericModalMensaje || !genericModalBotones) {
-        console.error("[DEBUG MODAL CONFIRM] ERROR: Elementos del modal genérico NO encontrados. Usando confirm() nativo."); 
-        if (confirm(mensaje)) { 
-            if (callbackConfirmar) callbackConfirmar();
-        } else {
-            if (callbackCancelar) callbackCancelar();
-        }
+
+/**
+ * Muestra un modal genérico con un título, mensaje y botones personalizables.
+ * @param {string} titulo El título del modal.
+ * @param {string} mensaje El cuerpo del mensaje del modal.
+ * @param {'info'|'exito'|'advertencia'|'error'|'confirmacion'} tipo El tipo de modal, que afecta el color y los botones.
+ * @param {boolean} [mostrarBotonCerrar=true] Si se muestra o no un botón para cerrar el modal. Por defecto es true.
+ * @param {HTMLElement} [elementoMensajeAlternativo=null] Un elemento del DOM alternativo donde mostrar el mensaje.
+ */
+export function mostrarModalMensaje(titulo, mensaje, tipo, mostrarBotonCerrar = true, elementoMensajeAlternativo = null) {
+    if (elementoMensajeAlternativo) {
+        elementoMensajeAlternativo.textContent = mensaje;
+        elementoMensajeAlternativo.className = `p-2 my-2 rounded text-sm ${
+            tipo === 'error' ? 'bg-red-100 text-red-700' : 
+            tipo === 'exito' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+        }`;
         return;
     }
-    console.log("[DEBUG MODAL CONFIRM] Elementos del modal genérico encontrados. genericModal:", !!genericModal, "genericModalTitulo:", !!genericModalTitulo, "genericModalMensaje:", !!genericModalMensaje, "genericModalBotones:", !!genericModalBotones); 
 
+    if (!genericModal || !genericModalTitulo || !genericModalMensaje || !genericModalBotones) return;
+    
     genericModalTitulo.textContent = titulo;
-    genericModalMensaje.innerHTML = `<p>${mensaje.replace(/\n/g, '<br>')}</p>`;
-    genericModalTitulo.className = 'text-xl font-semibold text-yellow-600'; 
+    genericModalMensaje.textContent = mensaje;
+    genericModalBotones.innerHTML = ''; // Limpiar botones anteriores
 
-    genericModalBotones.innerHTML = ''; 
+    // Asignar color al título según el tipo
+    genericModalTitulo.className = 'text-xl font-bold mb-4 ';
+    switch (tipo) {
+        case 'exito':
+            genericModalTitulo.classList.add('text-green-600');
+            break;
+        case 'error':
+            genericModalTitulo.classList.add('text-red-600');
+            break;
+        case 'advertencia':
+            genericModalTitulo.classList.add('text-yellow-600');
+            break;
+        default:
+            genericModalTitulo.classList.add('text-sky-600');
+            break;
+    }
+
+    if (mostrarBotonCerrar) {
+        const btnOk = document.createElement('button');
+        btnOk.textContent = 'Aceptar';
+        btnOk.className = 'bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded';
+        btnOk.onclick = cerrarGenericModal;
+        genericModalBotones.appendChild(btnOk);
+    }
+    
+    // ----- LA CLAVE DE LA CORRECCIÓN ESTÁ AQUÍ -----
+    // Se muestra el contenedor principal del modal, que actúa como fondo (overlay)
+    genericModal.classList.remove('hidden');
+    genericModal.classList.add('flex'); // Usamos flex para centrar el contenido
+}
+
+/**
+ * Muestra un modal de confirmación con acciones personalizadas para "Confirmar" y "Cancelar".
+ * @param {string} titulo El título de la confirmación.
+ * @param {string} mensaje El mensaje preguntando al usuario.
+ * @param {Function} onConfirm La función a ejecutar si el usuario confirma.
+ * @param {Function} [onCancel] La función a ejecutar si el usuario cancela.
+ */
+export function mostrarModalConfirmacion(titulo, mensaje, onConfirm, onCancel) {
+    if (!genericModal || !genericModalTitulo || !genericModalMensaje || !genericModalBotones) return;
+
+    mostrarModalMensaje(titulo, mensaje, 'confirmacion', false); // Muestra el texto sin botones por defecto
 
     const btnConfirmar = document.createElement('button');
     btnConfirmar.textContent = 'Confirmar';
-    btnConfirmar.className = 'px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md';
-    btnConfirmar.addEventListener('click', () => {
-        console.log("[DEBUG MODAL CONFIRM] Botón Confirmar clickeado."); 
+    btnConfirmar.className = 'bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded';
+    btnConfirmar.onclick = () => {
         cerrarGenericModal();
-        if (callbackConfirmar) callbackConfirmar();
-    });
+        if (onConfirm) onConfirm();
+    };
 
-    const btnCancelarModalGen = document.createElement('button'); 
-    btnCancelarModalGen.textContent = 'Cancelar';
-    btnCancelarModalGen.className = 'px-5 py-2.5 bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium rounded-lg';
-    btnCancelarModalGen.addEventListener('click', () => {
-        console.log("[DEBUG MODAL CONFIRM] Botón Cancelar clickeado."); 
+    const btnCancelar = document.createElement('button');
+    btnCancelar.textContent = 'Cancelar';
+    btnCancelar.className = 'bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded';
+    btnCancelar.onclick = () => {
         cerrarGenericModal();
-        if (callbackCancelar) callbackCancelar();
-    });
+        if (onCancel) onCancel();
+    };
 
-    genericModalBotones.appendChild(btnCancelarModalGen);
+    genericModalBotones.innerHTML = ''; // Limpiar de nuevo por si acaso
+    genericModalBotones.appendChild(btnCancelar);
     genericModalBotones.appendChild(btnConfirmar);
-
-    genericModal.classList.remove('hidden');
-    genericModal.classList.add('flex');
-    console.log("[DEBUG MODAL CONFIRM] Modal genérico debería estar visible para confirmación."); 
-    setTimeout(() => {
-        const content = genericModal.querySelector('.generic-modal-content');
-        if (content) {
-            content.classList.remove('scale-95');
-            content.classList.add('scale-100');
-        }
-    }, 10);
 }
-export function cerrarGenericModal() {
-    console.log("[DEBUG MODAL CIERRE] Función cerrarGenericModal llamada.");
-    if (!genericModal) {
-        console.error("[DEBUG MODAL CIERRE] Elemento genericModal no encontrado.");
-        return;
-    }
-    console.log("[DEBUG MODAL CIERRE] Clases ANTES de cerrar:", genericModal.className);
-    genericModal.classList.add('hidden');   
-    genericModal.classList.remove('flex');  
-    console.log("[DEBUG MODAL CIERRE] Clases DESPUÉS de cerrar:", genericModal.className);
 
-    const content = genericModal.querySelector('.generic-modal-content');
-    if (content) {
-        content.classList.remove('scale-100'); 
-        content.classList.add('scale-95');
+/**
+ * Cierra el modal genérico, asegurándose de que el contenedor principal (overlay) se oculte.
+ */
+export function cerrarGenericModal() {
+    if (genericModal) {
+        // ----- ESTA ES LA PARTE MÁS IMPORTANTE DE LA CORRECCIÓN -----
+        // Oculta TODO el componente modal, incluyendo el fondo que bloquea los clics.
+        genericModal.classList.add('hidden');
+        genericModal.classList.remove('flex');
+    }
+}
+
+/**
+ * Inicializa las variables del modal y asigna los eventos de cierre.
+ * Esta función debe ser llamada una sola vez en DOMContentLoaded.
+ */
+export function initUtils() {
+    genericModal = document.getElementById('generic-modal');
+    genericModalTitulo = document.getElementById('generic-modal-titulo');
+    genericModalMensaje = document.getElementById('generic-modal-mensaje');
+    genericModalBotones = document.getElementById('generic-modal-botones');
+    genericModalBtnCerrarX = document.getElementById('generic-modal-btn-cerrar-x');
+
+    if (genericModal) {
+        // Cierra el modal si se hace clic en el fondo (el propio contenedor)
+        genericModal.addEventListener('click', (event) => {
+            if (event.target === genericModal) {
+                cerrarGenericModal();
+            }
+        });
+    }
+    if (genericModalBtnCerrarX) {
+        // Cierra el modal si se hace clic en el botón 'X'
+        genericModalBtnCerrarX.addEventListener('click', cerrarGenericModal);
     }
 }

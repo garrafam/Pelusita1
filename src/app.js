@@ -1,6 +1,4 @@
-// =================================================================
-// ARCHIVO COMPLETO: src/app.js
-// =================================================================
+// src/app.js
 
 // --- 1. IMPORTACIONES ---
 const path = require('path');
@@ -8,131 +6,79 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
-// Importamos la instancia de sequelize desde el centralizador de modelos
+// Importamos la conexión y los modelos desde el archivo centralizador
 const { sequelize } = require('./models');
 
-// Importamos los archivos de rutas
+// Importamos nuestros archivos de rutas
 const productoRoutes = require('./routes/productoRoutes');
 const remitoRoutes = require('./routes/remitoRoutes');
+const facturaRoutes = require('./routes/facturaRoutes');
 
 // --- 2. INICIALIZACIÓN DE LA APP ---
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// --- 3. MIDDLEWARES ---
-// NOTA IMPORTANTE: El orden de los middlewares es crucial.
+// --- 3. MIDDLEWARES (EN EL ORDEN CORRECTO Y SIN DUPLICADOS) ---
 
-// A) Habilitar CORS. Esta debe ser una de las primeras líneas.
-// La configuración simple permite peticiones de cualquier origen.
+// A) Habilitar CORS para permitir todas las peticiones.
 app.use(cors());
-// En src/app.js
 
-// ... tus otras importaciones
-const publicPath = path.join(__dirname,'../','public');
-
-// 2. Imprimimos la ruta en la consola de la terminal para verla
-console.log('================================================');
-console.log('Ruta estática que se está intentando usar:', publicPath);
-console.log('================================================');
-
-// 3. Usamos la variable para servir los archivos
-app.use(express.static(publicPath));
-
-
-app.use(express.json());
-
-
-
-// Si necesitas una configuración de CORS más específica en el futuro:
-const corsOptions = {
-  // Reemplaza esto con la URL de tu frontend
-  origin: 'http://127.0.0.1:5500', 
-  optionsSuccessStatus: 200
-};
-app.use(cors(corsOptions));
-
-
-// B) Middlewares para parsear el cuerpo de las peticiones
+// B) Middlewares para parsear el cuerpo de las peticiones.
+//    ESTOS DEBEN ESTAR ANTES DE LAS RUTAS DE LA API.
 app.use(express.json()); // Para entender cuerpos en formato JSON
 app.use(express.urlencoded({ extended: true })); // Para entender cuerpos de formularios
 
+// C) Servir los archivos estáticos de nuestro frontend (HTML, CSS, JS del cliente).
+//    Se usa la ruta absoluta para que funcione tanto en desarrollo como en el .exe.
+const publicPath = path.join(__dirname, '..', 'public');
+console.log('Sirviendo archivos estáticos desde:', publicPath);
+app.use(express.static(publicPath));
+
 // --- 4. RUTAS DE LA API ---
-// Aquí es donde la app "usa" los archivos de rutas.
+// El servidor ahora usa los archivos de rutas que importamos.
 app.use('/api/productos', productoRoutes);
 app.use('/api/remitos', remitoRoutes);
+app.use('/api/facturas', facturaRoutes);
 
-// Ruta de bienvenida o para verificar que el servidor está vivo
-/*app.get('/', (req, res) => {
-  res.send('¡API de PelusitaStock funcionando!');
-});
-*/
-// --- 5. MANEJO DE ERRORES ---
-// Middleware para capturar rutas no encontradas (404)
-app.use((req, res, next) => {
-  res.status(404).json({ message: 'Ruta no encontrada.' });
+// --- 5. MANEJO DE ERRORES (CORREGIDO Y AL FINAL) ---
+
+// A) Middleware para capturar rutas de API no encontradas (404).
+//    Se ejecuta solo si la petición no coincidió con ninguna ruta anterior.
+app.use('/api', (req, res, next) => {
+    res.status(404).json({ message: "Ruta de API no encontrada." });
 });
 
-// Middleware global para capturar todos los demás errores (500)
-// Debe tener 4 argumentos para que Express lo identifique como manejador de errores.
+// B) Middleware global para capturar todos los demás errores del servidor (500).
 app.use((err, req, res, next) => {
-  console.error("Error global capturado:", err.message);
+  console.error("ERROR GLOBAL CAPTURADO:", err); // Logueamos el error completo para nosotros
 
-  // ... tu if para errores de Sequelize ...
-
-  // --- ¡MODIFICACIÓN TEMPORAL PARA DEPURAR! ---
-  // ¡NUNCA USAR ESTO EN UNA APLICACIÓN REAL EN PRODUCCIÓN!
-  res.status(err.status || 500).json({
-    message: err.message,
-    // Añadimos el 'stack' para ver el rastro completo del error
-    stack: err.stack, 
-    // También el error original por si acaso
-    originalError: err.original 
-  });
-
-  // Manejo específico para errores de validación de Sequelize
+  // Revisamos si es un error de validación de Sequelize para dar una respuesta clara
   if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
     const errors = err.errors.map(e => ({ field: e.path, message: e.message }));
     return res.status(400).json({ message: 'Error de validación.', errors });
   }
 
-  // Respuesta para todos los demás errores
-  res.status(err.status || 500).json({
-    message: err.message || 'Ocurrió un error inesperado en el servidor.',
+  // Para todos los demás errores, enviamos una respuesta genérica de error 500
+  res.status(500).json({
+    message: err.message || 'Ocurrió un error inesperado en el servidor.'
+    // En desarrollo, podríamos añadir err.stack para más detalles
+    // stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 });
 
 // --- 6. INICIO DEL SERVIDOR ---
 async function startServer() {
   try {
-    // Sincroniza la base de datos usando el sequelize del index de modelos.
-    // `alter: true` intenta modificar las tablas existentes para que coincidan con los modelos.
-    await sequelize.sync();
-    console.log('Base de datos sincronizada correctamente.');
+    await sequelize.authenticate();
+    console.log('Conexión a la base de datos establecida.');
 
-    // Inicia el servidor para escuchar peticiones
-    const server = app.listen(PORT, () => {
+    // sync() crea las tablas si no existen. Es seguro y no borra datos.
+    await sequelize.sync();
+    console.log('Base de datos sincronizada y lista.');
+
+    app.listen(PORT, () => {
       console.log(`🚀 Servidor Express corriendo en http://localhost:${PORT}`);
     });
-
-    // Lógica para un apagado elegante (cierra la DB antes de salir)
-    const gracefulShutdown = async (signal) => {
-      console.log(`\nRecibida señal ${signal}. Apagando servidor...`);
-      server.close(async () => {
-        console.log('Servidor HTTP cerrado.');
-        try {
-          await sequelize.close();
-          console.log('Conexión a la base de datos cerrada.');
-          process.exit(0);
-        } catch (dbErr) {
-          console.error('Error durante el cierre de la conexión a la base de datos:', dbErr);
-          process.exit(1);
-        }
-      });
-    };
-
-    process.on('SIGINT', () => gracefulShutdown('SIGINT')); // Ctrl+C
-    process.on('SIGTERM', () => gracefulShutdown('SIGTERM')); // Señal de terminación
-
   } catch (error) {
     console.error('❌ No se pudo iniciar el servidor:', error);
     process.exit(1);

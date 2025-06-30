@@ -1,10 +1,10 @@
 // script.js (Principal)
-import { fetchAPI,mostrarModalConfirmacion, mostrarModalMensaje, cerrarGenericModal } from './utils.js';
+import { fetchAPI,initUtils, mostrarModalConfirmacion, mostrarModalMensaje, cerrarGenericModal } from './utils.js';
 const BASE_URL = 'http://localhost:3001/api/productos'; 
 const REMITO_API_URL = 'http://localhost:3001/api/remitos';
 const TASA_IVA = 0.21; 
 const UMBRAL_BAJO_STOCK = 5; 
-
+document.addEventListener('DOMContentLoaded', () => { initUtils();})
 // --- Declaraciones de Elementos del DOM ---
 let inputCodigoDeBarras, inputNombre, inputPrecio, inputCategoria, inputStock,
     inputProductoExistenteId, btnSubmitAgregar, btnLimpiarFormulario,

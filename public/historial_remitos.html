@@ -195,6 +195,26 @@
             </div>
         </div>
     </div>
+        <!-- ========================================================== -->
+    <!-- === CÓDIGO DEL MODAL PARA VER EL DETALLE DEL REMITO === -->
+    <!-- ========================================================== -->
+    <div id="modal-ver-remito" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 overflow-y-auto h-full w-full flex items-center justify-center p-4 no-print">
+        <div class="relative w-full max-w-3xl bg-white rounded-xl shadow-2xl transform scale-95 transition-all">
+            
+            <!-- Contenido que se puede imprimir -->
+            <div id="detalle-remito-contenido" class="p-8 printable-remito">
+                <!-- El JavaScript llenará esta sección con los detalles del remito -->
+                <p class="text-center text-gray-500">Cargando detalle...</p>
+            </div>
+    
+            <!-- Botones de acción (no se imprimen) -->
+            <div class="p-4 bg-gray-50 rounded-b-xl flex justify-end space-x-3 border-t">
+                <button id="btn-imprimir-remito-modal" class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600">Imprimir PDF</button>
+                <button id="btn-cerrar-modal-detalle" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
 
    
 
@@ -218,7 +238,7 @@
             </div>
         </div>
     </div>
-    <script type="module" src="/js/utils.js" defer></script>
-    <script type="module" src="/js/historial_remitos.js" defer></script> 
+    <script type="module" src="./js/utils.js" defer></script>
+    <script type="module" src="./js/historial_remitos.js" defer></script> 
 </body>
 </html>
