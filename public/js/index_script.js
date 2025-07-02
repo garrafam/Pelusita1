@@ -1,7 +1,7 @@
 // script.js (Principal)
 import { fetchAPI,initUtils, mostrarModalConfirmacion, mostrarModalMensaje, cerrarGenericModal } from './utils.js';
-const BASE_URL = 'http://localhost:3001/api/productos'; 
-const REMITO_API_URL = 'http://localhost:3001/api/remitos';
+const BASE_URL = `${API_URL}/api/productos`; 
+const REMITO_API_URL = `${API_URL}/api/remitos`;
 const TASA_IVA = 0.21; 
 const UMBRAL_BAJO_STOCK = 5; 
 document.addEventListener('DOMContentLoaded', () => { initUtils();})
