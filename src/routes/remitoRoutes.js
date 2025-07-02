@@ -3,7 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const remitoService = require('../services/remitoService');
-
+const verifyToken = require('../middleware/verifyToken');
 // --- RUTA PARA OBTENER EL ÚLTIMO NÚMERO (GET /api/remitos/ultimoNumero) ---
 router.get('/ultimoNumero', async (req, res, next) => {
     try {

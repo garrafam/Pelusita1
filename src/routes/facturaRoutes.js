@@ -3,7 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const facturaService = require('../services/facturaService');
-
+const verifyToken = require('../middleware/verifyToken');
 // --- Ruta para CREAR una nueva factura (POST /api/facturas) ---
 router.post('/', async (req, res, next) => {
     try {
