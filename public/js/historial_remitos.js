@@ -2,7 +2,7 @@
 
 // Asumimos que utils.js se carga en el HTML y que fetchAPI está disponible.
 import { fetchAPI,initUtils, mostrarModalConfirmacion, mostrarModalMensaje, cerrarGenericModal } from './utils.js';
-
+import { API_URL } from './config.js';
 document.addEventListener('DOMContentLoaded', () => {
     // --- ELEMENTOS DEL DOM ---
     const contenedor = document.getElementById('contenedor-historial-remitos');
