@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnCerrarModal = document.getElementById('btn-cerrar-modal-detalle');
     const btnImprimir = document.getElementById('btn-imprimir-factura');
 
-    const FACTURA_API_URL = 'http://localhost:3001/api/facturas';
+    const FACTURA_API_URL = `${API_URL}/api/facturas`;
     let paginaActual = 1;
 
     // --- FUNCIONES ---
