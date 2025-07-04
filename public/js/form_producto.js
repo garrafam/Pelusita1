@@ -1,11 +1,11 @@
 // public/js/form_producto.js
 
 import { fetchAPI, initUtils, mostrarModalMensaje, cerrarGenericModal } from './utils.js';
-
+import { API_URL } from './config.js'; 
 document.addEventListener('DOMContentLoaded', () => {
     initUtils();
 
-    const BASE_URL = 'http://localhost:3001/api/productos';
+    const BASE_URL = `${API_URL}/api/productos`;
     
     const formulario = document.getElementById('formulario-agregar-producto');
     if (!formulario) return; // Si no hay formulario, no hacer nada.

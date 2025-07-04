@@ -1,5 +1,7 @@
 // script.js (Principal)
 import { fetchAPI,initUtils, mostrarModalConfirmacion, mostrarModalMensaje, cerrarGenericModal } from './utils.js';
+import { API_URL } from './config.js';
+
 const BASE_URL = `${API_URL}/api/productos`; 
 const REMITO_API_URL = `${API_URL}/api/remitos`;
 const TASA_IVA = 0.21; 

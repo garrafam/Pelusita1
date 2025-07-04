@@ -13,7 +13,7 @@ const { sequelize } = require('./models');
 const productoRoutes = require('./routes/productoRoutes');
 const remitoRoutes = require('./routes/remitoRoutes');
 const facturaRoutes = require('./routes/facturaRoutes');
-
+const authRoutes = require('./routes/auth'); // Ruta de autenticación
 // --- 2. INICIALIZACIÓN DE LA APP ---
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -39,6 +39,7 @@ app.use(express.static(publicPath));
 app.use('/api/productos', productoRoutes);
 app.use('/api/remitos', remitoRoutes);
 app.use('/api/facturas', facturaRoutes);
+app.use('/api/auth', authRoutes);; // Ruta de autenticación
 
 // --- 5. MANEJO DE ERRORES (CORREGIDO Y AL FINAL) ---
 

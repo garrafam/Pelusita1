@@ -1,3 +1,6 @@
+import { API_URL } from './config.js'; 
+
+
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     const errorMessage = document.getElementById('error-message');
@@ -15,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const password = event.target.password.value;
 
         try {
-            const response = await fetch(`${API_URL}/api/login`, {
+            const response = await fetch(`${API_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -31,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Guardar el token y redirigir
             localStorage.setItem('token', data.token);
-            window.location.href = '/admin_productos.html';
+            window.location.href = './admin_productos.html';
 
         } catch (error) {
             errorMessage.textContent = error.message;

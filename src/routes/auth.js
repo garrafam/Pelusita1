@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User'); // Importas tu modelo de usuario
+const {User }= require('../models/User'); // Importas tu modelo de usuario
 
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -11,13 +11,13 @@ router.post('/login', async (req, res) => {
   // 1. Buscar al usuario en la base de datos
   const user = await User.findOne({ where: { email } });
   if (!user) {
-    return res.status(404).json({ message: 'Usuario no encontrado' });
+    return res.status(404).json({ message: 'Credenciales inválidas' });
   }
 
   // 2. Comparar la contraseña enviada con la hasheada en la BD
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    return res.status(400).json({ message: 'Contraseña incorrecta' });
+    return res.status(400).json({ message: 'Credenciales inválidas' });
   }
 
   // 3. Si todo es correcto, crear el token

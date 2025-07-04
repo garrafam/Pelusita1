@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const productoService = require('../services/productoService'); 
-const verifyToken = require('../middleware/verifyToken'); 
+//const verifyToken = require('../middleware/verifyToken'); 
 // al inicio de productoRoutes.js
 const { Producto } = require('../models'); // Importa el modelo específico
 
