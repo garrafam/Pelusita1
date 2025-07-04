@@ -2,14 +2,14 @@
 
 // Se importa 'mostrarModalMensaje' para una UI consistente.
 import { fetchAPI, initUtils, mostrarModalMensaje } from './utils.js';
-
+import { API_URL } from './config.js';
 document.addEventListener('DOMContentLoaded', () => {
     // Se inicializan las utilidades de los modales genéricos una sola vez.
     initUtils(); 
     
     // --- Constantes y Variables ---
-    const FACTURA_API_URL = 'http://localhost:3001/api/facturas';
-    const PRODUCTO_API_URL = 'http://localhost:3001/api/productos';
+    const FACTURA_API_URL =`${API_URL}/api/facturas `; // Reemplazar con la URL real de la API
+    const PRODUCTO_API_URL = `${API_URL}/api/productos`;
     const TASA_IVA = 0.21;
     let productosDisponibles = [];
     let facturaActualItems = [];
