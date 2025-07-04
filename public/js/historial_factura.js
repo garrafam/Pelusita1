@@ -2,7 +2,7 @@
 
 // Corregimos la línea de importación: quitamos el ';;' y añadimos 'mostrarModalMensaje'
 import { fetchAPI, initUtils, mostrarModalMensaje, mostrarModalConfirmacion, cerrarGenericModal } from './utils.js';
-
+import { API_URL } from './config.js';
 document.addEventListener('DOMContentLoaded', () => {
    // initUtils(); // Inicializamos las utilidades del modal genérico
     // --- ELEMENTOS DEL DOM ---

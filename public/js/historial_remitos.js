@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnCerrarModal = document.getElementById('btn-cerrar-modal-detalle');
     const btnImprimir = document.getElementById('btn-imprimir-remito-modal');
 
-    const REMITO_API_URL = 'http://localhost:3001/api/remitos';
+    const REMITO_API_URL = `${API_URL}/api/remitos`;
 
     // --- FUNCIONES ---
 
