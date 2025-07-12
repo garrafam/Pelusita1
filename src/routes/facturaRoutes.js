@@ -3,9 +3,9 @@
 const express = require('express');
 const router = express.Router();
 const facturaService = require('../services/facturaService');
-//const verifyToken = require('../middleware/verifyToken');
+const verifyToken = require('../middleware/verifyToken');
 // --- Ruta para CREAR una nueva factura (POST /api/facturas) ---
-router.post('/', async (req, res, next) => {
+router.post('/',verifyToken, async (req, res, next) => {
     try {
         const nuevaFactura = await facturaService.crearFactura(req.body);
         res.status(201).json(nuevaFactura);
@@ -15,7 +15,7 @@ router.post('/', async (req, res, next) => {
 });
 
 // --- Ruta para OBTENER LA LISTA de facturas (GET /api/facturas) ---
-router.get('/', async (req, res, next) => {
+router.get('/',verifyToken, async (req, res, next) => {
     try {
         const resultado = await facturaService.obtenerTodasLasFacturas(req.query);
         res.status(200).json(resultado);
@@ -26,7 +26,7 @@ router.get('/', async (req, res, next) => {
 
 // --- RUTA PARA OBTENER UNA SOLA FACTURA (ESTA ES LA QUE FALTABA) ---
 // Responde a: GET /api/facturas/1, GET /api/facturas/2, etc.
-router.get('/:id', async (req, res, next) => {
+router.get('/:id',verifyToken, async (req, res, next) => {
     try {
         // req.params.id captura el número que viene en la URL
         const idFactura = req.params.id;

@@ -5,7 +5,12 @@ import { fetchAPI, initUtils, mostrarModalMensaje, mostrarModalConfirmacion, cer
 import { API_URL } from './config.js';
 document.addEventListener('DOMContentLoaded', () => {
    // initUtils(); // Inicializamos las utilidades del modal genérico
-    // --- ELEMENTOS DEL DOM ---
+     const token = localStorage.getItem('token');
+    if (!token) { 
+        // Si no hay token, es mejor usar tu handleAuthError o redirigir
+        window.location.href = '/login.html';
+        return; 
+    }// --- ELEMENTOS DEL DOM ---
     const contenedor = document.getElementById('contenedor-historial-facturas');
     const paginacionDiv = document.getElementById('paginacion-historial-facturas');
     const mensajeDiv = document.getElementById('mensaje-historial-facturas');
@@ -24,7 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
         mensajeDiv.textContent = 'Cargando facturas...';
         contenedor.innerHTML = '';
         paginaActual = pagina;
-
+ // 1. Obtienes el token
+       const token = localStorage.getItem('token');
+        if (!token) { return alert('No has iniciado sesión.'); }
         const cliente = document.getElementById('filtro-cliente').value;
         const url = new URL(FACTURA_API_URL);
         url.searchParams.append('pagina', pagina);
@@ -32,7 +39,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cliente) url.searchParams.append('cliente', cliente);
 
         try {
-            const data = await fetchAPI(url.toString());
+            const data = await fetchAPI(url.toString(), {
+           
+             headers: {
+                        'Authorization': token
+                      }})
             if (data.facturas && data.facturas.length > 0) {
                 renderizarListaFacturas(data.facturas);
                 mensajeDiv.textContent = '';
@@ -67,6 +78,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function abrirModalDetalle(facturaId) {
+        const token = localStorage.getItem('token');
+    if (!token) { 
+        // Si no hay token, es mejor usar tu handleAuthError o redirigir
+        window.location.href = '/login.html';
+        return; 
+    }
         if (!modalDetalle || !contenidoModalDetalle) {
             console.error("No se encontraron los elementos del modal de detalle.");
             return;
@@ -74,7 +91,10 @@ document.addEventListener('DOMContentLoaded', () => {
         modalDetalle.classList.remove('hidden');
         contenidoModalDetalle.innerHTML = '<p class="text-center text-gray-500">Cargando detalle...</p>';
         try {
-            const factura = await fetchAPI(`${FACTURA_API_URL}/${facturaId}`);
+            const factura = await fetchAPI(`${FACTURA_API_URL}/${facturaId}`, {
+            headers: {
+                'Authorization': token
+            }});
             renderizarDetalleEnModal(factura);
         } catch (error) {
             contenidoModalDetalle.innerHTML = `<p class="text-center text-red-500">Error al cargar el detalle: ${error.message}</p>`;

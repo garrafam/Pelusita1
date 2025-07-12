@@ -27,18 +27,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Funciones ---
 
-    async function cargarProductos() {
-        try {
-            // Se usa un límite alto para traer todos los productos. Para sistemas grandes, se recomienda paginación.
-            const data = await fetchAPI(`${PRODUCTO_API_URL}?limite=9999`);
-            productosDisponibles = data.productos || data.rows || [];
-            renderizarListaProductos();
-        } catch (error) {
-            console.error("Error al cargar productos:", error);
+   async function cargarProductos() {
+    try {
+        // 1. Obtener el token que guardaste después del login
+        const token = localStorage.getItem('token');
+        
+        // Medida de seguridad: si no hay token, no tiene sentido continuar
+        if (!token) {
+            // Este error será capturado por el bloque catch
+            throw new Error("401: Usuario no autenticado");
+        }
+
+        // 2. Preparar las opciones para el fetch, incluyendo la cabecera
+        const fetchOptions = {
+            headers: {
+                // 3. Añadir el header de autorización con el formato "Bearer"
+                'Authorization': token            }
+        };
+
+        const url = `${PRODUCTO_API_URL}?limite=9999`;
+        
+        // 4. Pasar las opciones a fetchAPI como segundo argumento
+        const data = await fetchAPI(url, fetchOptions);
+        
+        productosDisponibles = data.productos || data.rows || [];
+        renderizarListaProductos();
+
+    } catch (error) {
+        console.error("Error al cargar productos:", error);
+
+        // Lógica mejorada para redirigir si el token es inválido o expiró
+        if (error.message.includes('401') || error.message.includes('403')) {
+            // Puedes usar tu función handleAuthError si la tienes en utils.js
+            alert("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
+            window.location.href = '/login.html'; // Redirige al login
+        } else {
             if(listaProductosDiv) listaProductosDiv.innerHTML = '<p class="p-4 text-red-500">Error al cargar productos.</p>';
         }
     }
-
+}
     function renderizarListaProductos(filtro = '') {
         if (!listaProductosDiv) return;
         listaProductosDiv.innerHTML = '';
@@ -138,9 +165,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalConIVA = facturaActualItems.reduce((acc, item) => acc + (item.cantidad * item.precioUnitario), 0);
         const subtotalSinIVA = totalConIVA / (1 + TASA_IVA);
         const totalIVA = totalConIVA - subtotalSinIVA;
-
+          // 1. Obtienes el token
+        const token = localStorage.getItem('token');
+        if (!token) { return alert('No has iniciado sesión.'); }
         const datosFactura = {
             encabezado: {
+                fecha : new Date(),
                 clienteNombre,
                 clienteCUIT: clienteCUITInput.value.trim() || null,
                 tipoComprobante: 'Factura B',
@@ -156,7 +186,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const facturaCreada = await fetchAPI(FACTURA_API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json',
+                    'Authorization': token
+                 },
                 body: JSON.stringify(datosFactura)
             });
             
@@ -167,7 +199,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const nuevoStock = item.stockDisponible - item.cantidad;
                 return fetchAPI(`${PRODUCTO_API_URL}/${item.productoId}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json',
+                        'Authorization': token
+                     },
                     body: JSON.stringify({ stock: nuevoStock })
                 });
             });

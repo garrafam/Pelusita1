@@ -1,11 +1,12 @@
 // script.js (Principal)
-import { fetchAPI,initUtils, mostrarModalConfirmacion, mostrarModalMensaje, cerrarGenericModal } from './utils.js';
+import { fetchAPI,initUtils, mostrarModalConfirmacion, mostrarModalMensaje, cerrarGenericModal, handleAuthError } from './utils.js';
 import { API_URL } from './config.js';
 
 const BASE_URL = `${API_URL}/api/productos`; 
 const REMITO_API_URL = `${API_URL}/api/remitos`;
 const TASA_IVA = 0.21; 
 const UMBRAL_BAJO_STOCK = 5; 
+const token = localStorage.getItem('token');
 document.addEventListener('DOMContentLoaded', () => { initUtils();})
 // --- Declaraciones de Elementos del DOM ---
 let inputCodigoDeBarras, inputNombre, inputPrecio, inputCategoria, inputStock,
@@ -31,12 +32,27 @@ let proximoNumeroRemito = 1;
 let paginaActualProductos = 1;
 const limitePorPaginaProductos = 8; 
 
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  //  const token = localStorage.getItem('token');
+    
+    // --- DESCOMENTA ESTE BLOQUE ---
+      const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = '/login.html';
+        return; }
+     // Detiene la ejecución del resto del script si no hay token
+    
+})  
+  
+
 // --- Carga de Productos ---
-async function cargarProductos(pagina = 1) { 
-    if (!mensajeLista || !contenedorProductos || !paginacionProductosDiv) { 
+async function cargarProductos(pagina = 1) {
+    if (!mensajeLista || !contenedorProductos || !paginacionProductosDiv) {
         return;
     }
-    mostrarModalMensaje("Cargando...", "Cargando productos...", 'info', false); 
+    mostrarModalMensaje("Cargando...", "Cargando productos...", 'info', false);
 
     const terminoBusqueda = inputBusquedaGeneral ? inputBusquedaGeneral.value.trim() : "";
     const ordenarPor = selectOrdenarProductosPor ? selectOrdenarProductosPor.value : "nombre";
@@ -48,31 +64,53 @@ async function cargarProductos(pagina = 1) {
     if (ordenDireccion) url.searchParams.append('ordenDireccion', ordenDireccion);
     url.searchParams.append('pagina', pagina);
     url.searchParams.append('limite', limitePorPaginaProductos);
+
+    // --- INICIO DE LA CORRECCIÓN ---
+
+    // 1. Obtenemos el token guardado
+    const token = localStorage.getItem('token');
+    if (!token) {
+        // Si no hay token, no tiene sentido continuar. Redirigimos al login.
+        window.location.href = '/login.html';
+        return;
+    }
+
+    // 2. Preparamos las opciones para el fetch, incluyendo el header de autorización
+    const opcionesFetch = {
+        headers: {
+            'Authorization': token
+        }
+    };
+    
+    // --- FIN DE LA CORRECCIÓN ---
     
     try {
-        const data = await fetchAPI(url.toString());
+        // 3. Pasamos las opciones a fetchAPI
+        const data = await fetchAPI(url.toString(), opcionesFetch);
         
+        // El resto del bloque 'try' se mantiene igual...
         if (data && typeof data === 'object' && Array.isArray(data.productos)) {
-            productosCargados = data.productos; 
-            renderizarListaProductos(productosCargados); 
+            productosCargados = data.productos;
+            renderizarListaProductos(productosCargados);
             renderizarControlesPaginacionProductos(data.totalPaginas, data.paginaActual);
         } else {
             productosCargados = [];
             renderizarListaProductos([]);
-            renderizarControlesPaginacionProductos(0,1);
+            renderizarControlesPaginacionProductos(0, 1);
         }
         
         if (productosCargados.length === 0 && mensajeLista) {
             mensajeLista.textContent = terminoBusqueda ? `No se encontraron productos para "${terminoBusqueda}".` : 'No hay productos. ¡Agrega algunos!';
             mensajeLista.className = 'mt-6 text-sm text-center text-gray-500';
         } else if (mensajeLista) {
-            mensajeLista.textContent = ''; 
+            mensajeLista.textContent = '';
         }
-        cerrarGenericModal(); 
+        cerrarGenericModal();
     } catch (error) {
-        cerrarGenericModal(); 
+        handleAuthError(error, "Error al cargar productos")
+        cerrarGenericModal();
         mostrarModalMensaje("Error", `Error al cargar productos: ${error.message}`, "error");
-        renderizarControlesPaginacionProductos(0,1);
+        renderizarControlesPaginacionProductos(0, 1);
     }
 }
 function renderizarListaProductos(productosARenderizar) { 
@@ -315,7 +353,9 @@ function abrirModalEditar(productoRecibido) {
             console.log("[DEBUG PREPARAR REMITO] Próximo número de remito:", proximoNumeroRemito);
         }
     } catch (error) {
+        
         console.error("[DEBUG PREPARAR REMITO] Error al obtener último número de remito:", error);
+        handleAuthError(error, "Error al cargar remit")
         if (remitoNumeroDisplay) remitoNumeroDisplay.textContent = "Error";
         if (mensajeRemito) mostrarModalMensaje("Error", `Error al obtener N° de remito: ${error.message}`, 'error', true, mensajeRemito);
     }
@@ -640,80 +680,116 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if(btnCancelarRemito) btnCancelarRemito.addEventListener('click', ocultarSeccionRemito);
-        if(btnConfirmarGuardarRemito) btnConfirmarGuardarRemito.addEventListener('click', async () => {
-            const clienteNombre = inputRemitoClienteNombre.value.trim();
-            const clienteCUIT = inputRemitoClienteCUIT.value.trim();
-            if (!clienteNombre) {
-                mostrarModalMensaje("Datos Incompletos", 'Por favor, ingrese el nombre del cliente.', 'advertencia', true, mensajeRemito);
-                inputRemitoClienteNombre.focus(); return;
-            }
-            if (itemsSeleccionadosParaRemito.length === 0) {
-                mostrarModalMensaje("Sin Items", 'No hay productos en el remito para guardar.', 'advertencia', true, mensajeRemito); return;
-            }
-            let subtotalSinIVAEnc = 0, totalIVAEnc = 0, totalConIVAEnc = 0;
-            const itemsParaGuardarBackend = itemsSeleccionadosParaRemito.map(selItem => {
-                const item = selItem.productoOriginal;
-                const cantidad = selItem.cantidadRemito;
-                const precioFinalUnitario = parseFloat(item.precio);
-                const precioBaseUnitario = precioFinalUnitario / (1 + TASA_IVA);
-                const ivaUnitario = precioFinalUnitario - precioBaseUnitario;
-                const subtotalItemConIVA = cantidad * precioFinalUnitario;
-                subtotalSinIVAEnc += cantidad * precioBaseUnitario;
-                totalIVAEnc += cantidad * ivaUnitario;
-                totalConIVAEnc += subtotalItemConIVA;
-                return {
-                    productoId: item.id, nombreProducto: item.nombre, codigoDeBarrasProducto: item.codigoDeBarras || null,
-                    cantidad: cantidad, precioBaseUnitario: parseFloat(precioBaseUnitario.toFixed(2)),
-                    ivaUnitario: parseFloat(ivaUnitario.toFixed(2)), precioFinalUnitario: parseFloat(precioFinalUnitario.toFixed(2)),
-                    subtotalItemConIVA: parseFloat(subtotalItemConIVA.toFixed(2))
-                };
-            });
-            const datosRemito = {
-                encabezado: {
-                    clienteNombre: clienteNombre, clienteCUIT: clienteCUIT || null,
-                    subtotalSinIVA: parseFloat(subtotalSinIVAEnc.toFixed(2)),
-                    totalIVA: parseFloat(totalIVAEnc.toFixed(2)),
-                    totalConIVA: parseFloat(totalConIVAEnc.toFixed(2))
-                },
-                items: itemsParaGuardarBackend
+       if (btnConfirmarGuardarRemito) {
+    btnConfirmarGuardarRemito.addEventListener('click', async () => {
+        // --- 1. VALIDACIÓN INICIAL ---
+        const clienteNombre = inputRemitoClienteNombre.value.trim();
+        const clienteCUIT = inputRemitoClienteCUIT.value.trim();
+        if (!clienteNombre) {
+            mostrarModalMensaje("Datos Incompletos", 'Por favor, ingrese el nombre del cliente.', 'advertencia');
+            return;
+        }
+        if (itemsSeleccionadosParaRemito.length === 0) {
+            mostrarModalMensaje("Sin Items", 'No hay productos en el remito.', 'advertencia');
+            return;
+        }
+
+        // ... (Tu código para preparar itemsParaGuardarBackend y datosRemito)
+        let subtotalSinIVAEnc = 0, totalIVAEnc = 0, totalConIVAEnc = 0;
+        const itemsParaGuardarBackend = itemsSeleccionadosParaRemito.map(selItem => {
+            const item = selItem.productoOriginal;
+            const cantidad = selItem.cantidadRemito;
+            const precioFinalUnitario = parseFloat(item.precio);
+            const precioBaseUnitario = precioFinalUnitario / (1 + TASA_IVA);
+            const ivaUnitario = precioFinalUnitario - precioBaseUnitario;
+            const subtotalItemConIVA = cantidad * precioFinalUnitario;
+            
+            subtotalSinIVAEnc += cantidad * precioBaseUnitario;
+            totalIVAEnc += cantidad * ivaUnitario;
+            totalConIVAEnc += subtotalItemConIVA;
+            
+            return {
+                productoId: item.id,
+                cantidad: cantidad,
+                // ... puedes añadir más datos del item si tu backend los necesita
             };
-            mostrarModalMensaje("Procesando...", 'Guardando remito y actualizando stock...', 'info', false, mensajeRemito);
-            btnConfirmarGuardarRemito.disabled = true; btnCancelarRemito.disabled = true; btnImprimirRemito.disabled = true; btnEnviarRemitoCorreo.disabled = true;
-            try {
-                const remitoGuardado = await fetchAPI(REMITO_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosRemito) });
-                cerrarGenericModal(); 
-                mostrarModalMensaje("Éxito", `Remito N° ${remitoGuardado.id.toString().padStart(6, '0')} guardado. Actualizando stock...`, 'info', false, mensajeRemito);
-                let todasLasActualizacionesExitosas = true; const erroresDeActualizacion = [];
-                for (const selItem of itemsSeleccionadosParaRemito) { 
-                    const itemOriginal = selItem.productoOriginal;
-                    const cantidadSalida = selItem.cantidadRemito;
-                    const nuevoStock = itemOriginal.stock - cantidadSalida;
-                    try {
-                        await fetchAPI(`${BASE_URL}/${itemOriginal.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stock: nuevoStock }) });
-                    } catch (error) {
-                        todasLasActualizacionesExitosas = false; erroresDeActualizacion.push(`Error al actualizar stock para ${itemOriginal.nombre}: ${error.message}`);
-                    }
-                }
-                cerrarGenericModal(); 
-                if (todasLasActualizacionesExitosas) {
-                    mostrarModalMensaje("Completado", `Remito N° ${remitoGuardado.id.toString().padStart(6, '0')} guardado y stock actualizado exitosamente.`, 'exito', true, mensajeRemito);
-                    setTimeout(() => {
-                        ocultarSeccionRemito(); 
-                        cargarProductos(paginaActualProductos); 
-                        if(typeof cargarHistorialRemitos === 'function') cargarHistorialRemitos(1); 
-                    }, 3000);
-                } else {
-                    const mensajeErrorCompleto = `Remito N° ${remitoGuardado.id.toString().padStart(6, '0')} guardado, pero algunos productos no pudieron actualizar su stock: \n` + erroresDeActualizacion.join('\n');
-                    mostrarModalMensaje("Error Parcial", mensajeErrorCompleto, 'error', false, mensajeRemito); 
-                    cargarProductos(paginaActualProductos);
-                }
-            } catch (error) {
-                cerrarGenericModal();
-                mostrarModalMensaje("Error", `Error al guardar remito: ${error.message}`, 'error', false, mensajeRemito);
-            } finally {
-                btnConfirmarGuardarRemito.disabled = false; btnCancelarRemito.disabled = false; btnImprimirRemito.disabled = false; btnEnviarRemitoCorreo.disabled = false;
-            }
         });
+
+        const datosRemito = {
+            encabezado: {
+                fecha: new Date(),
+                clienteNombre: clienteNombre,
+                clienteCUIT: clienteCUIT || null,
+                subtotalSinIVA: parseFloat(subtotalSinIVAEnc.toFixed(2)),
+                totalIVA: parseFloat(totalIVAEnc.toFixed(2)),
+                totalConIVA: parseFloat(totalConIVAEnc.toFixed(2))
+            },
+            items: itemsParaGuardarBackend
+        };
+        
+
+        // --- INICIO DE LA LÓGICA DE AUTENTICACIÓN Y ENVÍO ---
+        
+        // 1. Obtenemos el token
+        const token = localStorage.getItem('token');
+        if (!token) {
+            handleAuthError(new Error("401: No autenticado")); // Usa tu manejador de errores
+            return;
+        }
+
+        // 2. Preparamos las opciones para el fetch con el token
+        const optionsConToken = {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        };
+
+        mostrarModalMensaje("Procesando...", 'Guardando remito y actualizando stock...', 'info', false);
+        btnConfirmarGuardarRemito.disabled = true; // Deshabilitar botones...
+
+        try {
+            // 3. Enviamos el token al crear el remito
+            const remitoGuardado = await fetchAPI(REMITO_API_URL, {
+                method: 'POST',
+                ...optionsConToken, // Usamos las opciones con token
+                body: JSON.stringify(datosRemito)
+            });
+
+            cerrarGenericModal();
+            mostrarModalMensaje("Éxito", `Remito N° ${remitoGuardado.id} guardado. Actualizando stock...`, 'info', false);
+
+            // 4. Bucle para actualizar el stock, enviando el token en cada petición
+            for (const selItem of itemsSeleccionadosParaRemito) {
+                const itemOriginal = selItem.productoOriginal;
+                const nuevoStock = itemOriginal.stock - selItem.cantidadRemito;
+                try {
+                    await fetchAPI(`${BASE_URL}/${itemOriginal.id}`, {
+                        method: 'PUT',
+                        ...optionsConToken, // Usamos las opciones con token también aquí
+                        body: JSON.stringify({ stock: nuevoStock })
+                    });
+                } catch (error) {
+                    // Manejar error de actualización de stock si es necesario
+                    console.error(`Error actualizando stock para producto ID ${itemOriginal.id}:`, error);
+                }
+            }
+            
+            cerrarGenericModal();
+            mostrarModalMensaje("Completado", `Remito guardado y stock actualizado.`, 'exito');
+            setTimeout(() => {
+                ocultarSeccionRemito();
+                cargarProductos(paginaActualProductos);
+            }, 2000);
+
+        } catch (error) {
+            // 5. Usamos el manejador de errores central
+            handleAuthError(error, "Error al guardar el remito");
+        } finally {
+            btnConfirmarGuardarRemito.disabled = false; // Rehabilitar botones...
+        }
+    });
+}
     if(btnImprimirRemito) { 
         btnImprimirRemito.addEventListener('click', () => { 
             if (itemsSeleccionadosParaRemito.length === 0) { 

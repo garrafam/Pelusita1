@@ -2,7 +2,13 @@
 
 import { fetchAPI, initUtils, mostrarModalMensaje, cerrarGenericModal } from './utils.js';
 import { API_URL } from './config.js'; 
+
+
 document.addEventListener('DOMContentLoaded', () => {
+     const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = '/login.html';
+        return; }
     initUtils();
 
     const BASE_URL = `${API_URL}/api/productos`;
@@ -29,8 +35,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     async function cargarDatosDelProducto(id) {
         mostrarModalMensaje("Cargando...", `Cargando datos del producto...`, 'info', false);
-        try {
-            const producto = await fetchAPI(`${BASE_URL}/${id}`);
+        try {const token = localStorage.getItem('token');
+            const producto = await fetchAPI(`${BASE_URL}/${id}`,{
+                 headers: { 'Authorization': token }
+            })
             inputNombre.value = producto.nombre;
             inputPrecio.value = producto.precio;
             inputCategoria.value = producto.categoria;
@@ -77,9 +85,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (btnSubmit) btnSubmit.disabled = true;
             mostrarModalMensaje("Procesando...", "Guardando producto...", 'info', false);
+            const token = localStorage.getItem('token');
             const resultado = await fetchAPI(url, {
                 method: method,
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json' ,
+                    'Authorization': token 
+                },
                 body: JSON.stringify(datosProducto)
             });
             

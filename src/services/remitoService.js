@@ -15,6 +15,7 @@ const crearRemito = async (datosRemito) => {
         }
 
         const nuevoRemito = await db.Remito.create({
+             fecha: encabezado.fecha,
             clienteNombre: encabezado.clienteNombre,
             clienteCUIT: encabezado.clienteCUIT,
             subtotalSinIVA: encabezado.subtotalSinIVA,

@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const productoService = require('../services/productoService'); 
-//const verifyToken = require('../middleware/verifyToken'); 
+const verifyToken = require('../middleware/verifyToken'); 
 // al inicio de productoRoutes.js
 const { Producto } = require('../models'); // Importa el modelo específico
+const { verify } = require('jsonwebtoken');
 
 // POST /api/productos - Crear un nuevo producto
-router.post('/', async (req, res) => {
+router.post('/',verifyToken , async (req, res) => {
     try {
         if (req.body.stock !== undefined && req.body.stock !== null && req.body.stock !== '') {
             req.body.stock = parseInt(req.body.stock, 10);
@@ -38,7 +39,7 @@ router.post('/', async (req, res) => {
 });
 
 // GET /api/productos - Obtener todos los productos (MODIFICADO para paginación y ordenamiento)
-router.get('/', async (req, res) => {
+router.get('/',verifyToken, async (req, res) => {
     try {
         const opciones = {
             q: req.query.q, // Para búsqueda general
@@ -47,7 +48,7 @@ router.get('/', async (req, res) => {
             pagina: req.query.pagina || 1,
             limite: req.query.limite || 10 // Límite por defecto para productos
         };
-        const resultadoPaginado = await productoService.obtenerTodosLosProductos(opciones);
+        const resultadoPaginado = await productoService.obtenerTodosLosProductos(opciones, req.user);
         res.status(200).json(resultadoPaginado);
     } catch (error) {
         console.error("Error en ruta GET /api/productos:", error.message);
@@ -56,7 +57,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/productos/codigo/:codigoDeBarras - Obtener un producto por su código de barras
-router.get('/codigo/:codigoDeBarras', async (req, res) => {
+router.get('/codigo/:codigoDeBarras',verifyToken, async (req, res) => {
     try {
         const { codigoDeBarras } = req.params;
         if (!codigoDeBarras || codigoDeBarras.trim() === '') { 
@@ -74,7 +75,7 @@ router.get('/codigo/:codigoDeBarras', async (req, res) => {
 });
 
 // GET /api/productos/:id - Obtener un producto por ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyToken, async (req, res) => {
     try {
         const producto = await productoService.obtenerProductoPorId(req.params.id);
         if (!producto) {
@@ -89,7 +90,7 @@ router.get('/:id', async (req, res) => {
 
 
 // PUT /api/productos/:id - Actualizar un producto
-router.put('/:id', async (req, res) => {
+router.put('/:id',verifyToken, async (req, res) => {
     try {
         if (req.body.stock !== undefined && req.body.stock !== null && req.body.stock !== '') {
             req.body.stock = parseInt(req.body.stock, 10);
@@ -124,7 +125,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/productos/:id - Eliminar un producto
-router.delete('/:id', async (req, res) => {
+router.delete('/:id',verifyToken, async (req, res) => {
     try {
         const productoEliminado = await productoService.eliminarProducto(req.params.id);
         if (!productoEliminado) {

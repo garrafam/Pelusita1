@@ -39,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'RemitoItem',
     tableName: 'remito_items',
-    timestamps: false
+    timestamps: true
   });
   return RemitoItem;
 };

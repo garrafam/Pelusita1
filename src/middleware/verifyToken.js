@@ -1,21 +1,23 @@
-// /middleware/verifyToken.js
 const jwt = require('jsonwebtoken');
 
 function verifyToken(req, res, next) {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Formato: "Bearer TOKEN"
-
-  if (!token) {
-    return res.status(401).json({ message: 'Acceso denegado: no se proporcionó token' });
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Acceso denegado: formato de token incorrecto.' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  const token = authHeader.split(' ')[1];
+  const secret = process.env.JWT_SECRET.trim(); // Usamos la misma clave limpia
+
+  jwt.verify(token, secret, (err, user) => {
     if (err) {
+      console.error("Error al verificar token:", err.message);
       return res.status(403).json({ message: 'Token no válido o expirado' });
     }
-    req.user = user; // Guardamos los datos del usuario en el objeto de la petición
-    next(); // El token es válido, continuamos a la ruta solicitada
+    req.user = user;
+    next();
   });
 }
 
-module = verifyToken;
+module.exports = verifyToken;

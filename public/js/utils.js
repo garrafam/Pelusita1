@@ -13,26 +13,54 @@ let genericModalBtnCerrarX;
  * @param {object} options Opciones para la petición fetch (method, headers, body, etc.).
  * @returns {Promise<any>} Una promesa que se resuelve con los datos JSON de la respuesta.
  */
+// /public/js/utils.js (Versión Corregida y Robusta)
+
+// --- FUNCIÓN fetchAPI MEJORADA ---
 export async function fetchAPI(url, options = {}) {
+     
+    const response = await fetch(url, options);
+    
+    // Verificamos si la respuesta fue exitosa (códigos 200-299)
+    if (response.ok) {
+        // Si la respuesta no tiene contenido (ej. en un DELETE), devolvemos un objeto de éxito
+        if (response.status === 204) {
+            return { success: true };
+        }
+        return response.json(); // Si tiene contenido, lo devolvemos como JSON
+    }
+
+    // --- MANEJO DE ERRORES ---
+    // Si la respuesta NO fue exitosa, creamos un error personalizado.
+    let errorMessage = `Error HTTP: ${response.status}`;
     try {
-        const respuesta = await fetch(url, options);
-        if (!respuesta.ok) {
-            const errorData = await respuesta.json().catch(() => ({ message: respuesta.statusText }));
-            throw new Error(errorData.message || `Error HTTP ${respuesta.status}`);
-        }
-        // Si la respuesta no tiene contenido (ej. un DELETE exitoso), devuelve un objeto vacío.
-        if (respuesta.status === 204) {
-            return {};
-        }
-        return respuesta.json();
-    } catch (error) {
-        console.error('Error en fetchAPI:', error);
-        throw error; // Relanza el error para que la función que llama pueda manejarlo.
+        // Intentamos obtener más detalles del cuerpo de la respuesta
+        const errorData = await response.json();
+        errorMessage = errorData.message || JSON.stringify(errorData);
+    } catch (e) {
+        // Si el cuerpo no es JSON, usamos el texto de status
+        errorMessage = response.statusText;
+    }
+
+    // Creamos un error que incluye el código de status en el mensaje
+    const error = new Error(`${response.status}: ${errorMessage}`);
+    throw error;
+}
+
+// --- TU FUNCIÓN handleAuthError (Ahora funcionará siempre) ---
+export function handleAuthError(error, customMessage = 'Ocurrió un error') {
+    cerrarGenericModal();
+    console.error("Error detectado:", error.message);
+    
+    if (error.message.includes('401') || error.message.includes('403')) {
+        localStorage.removeItem('token');
+        mostrarModalMensaje("Sesión Expirada", "Tu sesión ha expirado. Serás redirigido al login.", "advertencia");
+        setTimeout(() => window.location.href = './login.html', 2500);
+    } else {
+        mostrarModalMensaje("Error", `${customMessage}: ${error.message}`, "error");
     }
 }
 
-
-/**
+/*
  * Muestra un modal genérico con un título, mensaje y botones personalizables.
  * @param {string} titulo El título del modal.
  * @param {string} mensaje El cuerpo del mensaje del modal.
@@ -156,3 +184,5 @@ export function initUtils() {
         genericModalBtnCerrarX.addEventListener('click', cerrarGenericModal);
     }
 }
+// Añade esta nueva función a tu archivo utils.js
+
