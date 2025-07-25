@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 
 router.post('/login', async (req, res) => {
+      console.log('--- 3. Dentro de la ruta auth.js ---');
+    console.log('req.body DENTRO de la ruta:', req.body); // ¿Sigue teniendo datos
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ where: { email } });

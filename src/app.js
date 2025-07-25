@@ -1,58 +1,45 @@
 // src/app.js
 
-require('dotenv').config(); // Correcto, siempre al principio.
-const path = require('path');
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { sequelize } = require('./models');
 const productoRoutes = require('./routes/productoRoutes');
 const remitoRoutes = require('./routes/remitoRoutes');
 const facturaRoutes = require('./routes/facturaRoutes');
 const authRoutes = require('./routes/auth');
 
-// --- 2. INICIALIZACIÓN DE LA APP ---
 const app = express();
-const PORT = process.env.PORT || 3001;
 
-// --- 3. MIDDLEWARES ---
 app.use(cors());
 
-// ▼▼▼ INICIO DEL CAMBIO PARA DEPURACIÓN ▼▼▼
-// Reemplazamos express.json() con nuestro propio middleware "espía".
+// --- INICIO DE LA DEPURACIÓN ---
+
+// LOG 1: ¿Qué hay antes de express.json?
 app.use((req, res, next) => {
-    // Solo actuamos en peticiones POST con contenido JSON
-    if (req.method === 'POST' && req.headers['content-type'] === 'application/json') {
-        let data = '';
-        req.on('data', chunk => {
-            data += chunk;
-        });
-        req.on('end', () => {
-            console.log('<<<<< CUERPO DE LA PETICIÓN RECIBIDO (RAW) >>>>>');
-            console.log(data);
-            console.log('<<<<< FIN DEL CUERPO RAW >>>>>');
-            try {
-                // Intentamos "traducir" el texto a JSON y lo ponemos en req.body
-                req.body = data ? JSON.parse(data) : {};
-                next();
-            } catch (e) {
-                console.error("Error al parsear el JSON del cuerpo de la petición:", e);
-                res.status(400).json({ message: "Cuerpo de la petición JSON mal formado." });
-            }
-        });
-    } else {
-        // Para cualquier otra petición (GET, etc.), simplemente continuamos.
-        next();
-    }
+    console.log(`\n--- 1. Petición recibida: ${req.method} ${req.url} ---`);
+    console.log('req.body ANTES de express.json:', req.body); // Debería ser undefined
+    next();
 });
-// ▲▲▲ FIN DEL CAMBIO PARA DEPURACIÓN ▲▲▲
+
+app.use(express.json());
+
+// LOG 2: ¿Qué hay después de express.json?
+app.use((req, res, next) => {
+    console.log('--- 2. Después de express.json() ---');
+    console.log('req.body DESPUÉS de express.json:', req.body); // ¡DEBERÍA TENER DATOS AQUÍ!
+    next();
+});
+
+// --- FIN DE LA DEPURACIÓN ---
 
 app.use(express.urlencoded({ extended: true }));
 
 const publicPath = path.join(__dirname, '..', 'public');
-console.log('Sirviendo archivos estáticos desde:', publicPath);
 app.use(express.static(publicPath));
 
-// --- 4. RUTAS DE LA API ---
+// Rutas de la API
 app.use('/api/productos', productoRoutes);
 app.use('/api/remitos', remitoRoutes);
 app.use('/api/facturas', facturaRoutes);
