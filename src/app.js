@@ -1,46 +1,62 @@
 // src/app.js
 
-// --- 1. IMPORTACIONES ---
-require('dotenv').config();
+require('dotenv').config(); // Correcto, siempre al principio.
 const path = require('path');
-
 const express = require('express');
 const cors = require('cors');
-
-// Importamos la conexión y los modelos desde el archivo centralizador
 const { sequelize } = require('./models');
-
-// Importamos nuestros archivos de rutas
 const productoRoutes = require('./routes/productoRoutes');
 const remitoRoutes = require('./routes/remitoRoutes');
 const facturaRoutes = require('./routes/facturaRoutes');
-const authRoutes = require('./routes/auth'); // Ruta de autenticación
+const authRoutes = require('./routes/auth');
+
 // --- 2. INICIALIZACIÓN DE LA APP ---
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// --- 3. MIDDLEWARES (EN EL ORDEN CORRECTO Y SIN DUPLICADOS) ---
-
-// A) Habilitar CORS para permitir todas las peticiones.
+// --- 3. MIDDLEWARES ---
 app.use(cors());
 
-// B) Middlewares para parsear el cuerpo de las peticiones.
-//    ESTOS DEBEN ESTAR ANTES DE LAS RUTAS DE LA API.
-app.use(express.json()); // Para entender cuerpos en formato JSON
-app.use(express.urlencoded({ extended: true })); // Para entender cuerpos de formularios
+// ▼▼▼ INICIO DEL CAMBIO PARA DEPURACIÓN ▼▼▼
+// Reemplazamos express.json() con nuestro propio middleware "espía".
+app.use((req, res, next) => {
+    // Solo actuamos en peticiones POST con contenido JSON
+    if (req.method === 'POST' && req.headers['content-type'] === 'application/json') {
+        let data = '';
+        req.on('data', chunk => {
+            data += chunk;
+        });
+        req.on('end', () => {
+            console.log('<<<<< CUERPO DE LA PETICIÓN RECIBIDO (RAW) >>>>>');
+            console.log(data);
+            console.log('<<<<< FIN DEL CUERPO RAW >>>>>');
+            try {
+                // Intentamos "traducir" el texto a JSON y lo ponemos en req.body
+                req.body = data ? JSON.parse(data) : {};
+                next();
+            } catch (e) {
+                console.error("Error al parsear el JSON del cuerpo de la petición:", e);
+                res.status(400).json({ message: "Cuerpo de la petición JSON mal formado." });
+            }
+        });
+    } else {
+        // Para cualquier otra petición (GET, etc.), simplemente continuamos.
+        next();
+    }
+});
+// ▲▲▲ FIN DEL CAMBIO PARA DEPURACIÓN ▲▲▲
 
-// C) Servir los archivos estáticos de nuestro frontend (HTML, CSS, JS del cliente).
-//    Se usa la ruta absoluta para que funcione tanto en desarrollo como en el .exe.
+app.use(express.urlencoded({ extended: true }));
+
 const publicPath = path.join(__dirname, '..', 'public');
 console.log('Sirviendo archivos estáticos desde:', publicPath);
 app.use(express.static(publicPath));
 
 // --- 4. RUTAS DE LA API ---
-// El servidor ahora usa los archivos de rutas que importamos.
 app.use('/api/productos', productoRoutes);
 app.use('/api/remitos', remitoRoutes);
 app.use('/api/facturas', facturaRoutes);
-app.use('/api/auth', authRoutes);; // Ruta de autenticación
+app.use('/api/auth', authRoutes); // Corregido el doble punto y coma
 
 // --- 5. MANEJO DE ERRORES (CORREGIDO Y AL FINAL) ---
 

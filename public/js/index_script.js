@@ -327,7 +327,7 @@ function abrirModalEditar(productoRecibido) {
     if(mensajeModalEdicion) mensajeModalEdicion.textContent = ''; 
 }
 */function cerrarModalEditar() { 
-    console.log("[DEBUG EDITAR PRODUCTO] Función cerrarModalEditar llamada."); 
+    
     if (!modalEditar) return;
     
     const modalContent = modalEditar.querySelector('.modal-content');
@@ -344,17 +344,17 @@ function abrirModalEditar(productoRecibido) {
 /*
 // --- Lógica de Remito ---
 */async function obtenerYMostrarProximoNumeroRemito() { 
-    console.log("[DEBUG PREPARAR REMITO] obtenerYMostrarProximoNumeroRemito - INICIO");
+   
     try {
         const data = await fetchAPI(`${REMITO_API_URL}/ultimoNumero`);
         proximoNumeroRemito = (data.ultimoNumero || 0) + 1;
         if (remitoNumeroDisplay) {
             remitoNumeroDisplay.textContent = proximoNumeroRemito.toString().padStart(6, '0');
-            console.log("[DEBUG PREPARAR REMITO] Próximo número de remito:", proximoNumeroRemito);
+           
         }
     } catch (error) {
         
-        console.error("[DEBUG PREPARAR REMITO] Error al obtener último número de remito:", error);
+        
         handleAuthError(error, "Error al cargar remit")
         if (remitoNumeroDisplay) remitoNumeroDisplay.textContent = "Error";
         if (mensajeRemito) mostrarModalMensaje("Error", `Error al obtener N° de remito: ${error.message}`, 'error', true, mensajeRemito);

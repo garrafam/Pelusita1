@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const email = event.target.email.value;
         const password = event.target.password.value;
 
-        try {console.log("Intentando iniciar sesión con:", email, password);
+        try {
             const response = await fetch(`${API_URL}/api/auth/login`, {
                 
                 method: 'POST',
@@ -29,8 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const data = await response.json();
-             console.log("Respuesta completa del servidor:", data);
-    console.log("Token recibido:", data.token); 
+             
 
             if (!response.ok) {
                 throw new Error(data.message || 'Error al iniciar sesión.');
@@ -38,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Guardar el token y redirigir
             localStorage.setItem('token', data.token);
-             console.log("Token guardado. Redirigiendo...")
+            
             window.location.href = '/index.html';
 
         } catch (error) {
